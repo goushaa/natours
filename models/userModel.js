@@ -32,6 +32,7 @@ const userSchema = new mongoose.Schema({
       message: 'passwords are not the name',
     },
   },
+  passwordChangedAt: Date,
 });
 
 userSchema.pre('save', async function (next) {
@@ -47,6 +48,18 @@ userSchema.methods.correctPassword = async function (
   userPassword,
 ) {
   return await bcrypt.compare(candidatePassword, userPassword);
+};
+
+userSchema.methods.changedPasswordAfter = async function (JWTTimestamp) {
+  if (this.passwordChangedAt) {
+    // eslint-disable-next-line radix
+    const changedTimestap = parseInt(this.passwordChangedAt.getTime() / 1000);
+
+    return JWTTimestamp < changedTimestap; // TRUE = CHANGED = CHANGED TIMESTAMP AFTER TOKEN CREATION
+  }
+
+  // NOT CHANGED
+  return false;
 };
 
 const User = mongoose.model('User', userSchema);
