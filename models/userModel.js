@@ -15,6 +15,11 @@ const userSchema = new mongoose.Schema({
     validate: [validator.isEmail, 'Please provide a valid email'],
   },
   photo: String,
+  role: {
+    type: String,
+    enum: ['user', 'guide', 'lead-guide', 'admin'],
+    default: 'user',
+  },
   password: {
     type: String,
     required: [true, 'Please provide a password'],
@@ -50,7 +55,7 @@ userSchema.methods.correctPassword = async function (
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
-userSchema.methods.changedPasswordAfter = async function (JWTTimestamp) {
+userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
   if (this.passwordChangedAt) {
     // eslint-disable-next-line radix
     const changedTimestap = parseInt(this.passwordChangedAt.getTime() / 1000);
