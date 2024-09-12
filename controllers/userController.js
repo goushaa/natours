@@ -64,8 +64,5 @@ exports.getUser = (req, res) => {
   res.status(500).json({ status: 'error', message: 'this route is not yet' });
 };
 
-exports.updateUser = (req, res) => {
-  res.status(500).json({ status: 'error', message: 'this route is not yet' });
-};
-
+exports.updateUser = factory.updateOne(User); // DO NOT CHANGE PASSWORD WITH THIS
 exports.deleteUser = factory.deleteOne(User);
