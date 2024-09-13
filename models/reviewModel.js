@@ -30,6 +30,8 @@ const reviewSchema = new mongoose.Schema(
   { toJSON: { virtuals: true }, toObject: { virtuals: true } },
 );
 
+reviewSchema.index({ tour: 1, author: 1 }, { unique: true });
+
 reviewSchema.pre(/^find/, function (next) {
   //   this.populate({
   //     path: 'tour',
@@ -73,7 +75,7 @@ reviewSchema.statics.calcAverageRatings = async function (tourID) {
   }
 };
 
-reviewSchema.post('save', function (next) {
+reviewSchema.post('save', function () {
   // this points to current review
   this.constructor.calcAverageRatings(this.tour);
 });
@@ -82,11 +84,14 @@ reviewSchema.post('save', function (next) {
 // findbyIdAndDelete
 reviewSchema.pre(/^findOneAnd/, async function (next) {
   this.r = await this.findOne();
+
   next();
 });
 
 reviewSchema.post(/^findOneAnd/, async function (next) {
   // this.findOne() doesn't work here because query has already executed
+  console.log(this.r);
+
   await this.r.constructor.calcAverageRatings(this.r.tour);
 });
 
