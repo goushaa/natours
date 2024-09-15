@@ -74,6 +74,8 @@ exports.protect = catchAsync(async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     token = req.headers.authorization.split(' ')[1];
+  } else if (req.cookies.jwt) {
+    token = req.cookies.jwt;
   }
 
   if (!token)
@@ -101,6 +103,32 @@ exports.protect = catchAsync(async (req, res, next) => {
   req.user = userExist;
   next();
 });
+
+// Only for rendered pages
+exports.isLoggedIn = async (req, res, next) => {
+  try {
+    if (req.cookies.jwt) {
+      // 1) Verify
+      const decoded = await promisify(jwt.verify)(
+        req.cookies.jwt,
+        process.env.JWT_SECRET,
+      );
+
+      // 2) Check if user still exists
+      const userExist = await User.findById(decoded.id);
+      if (!userExist) return next();
+
+      // 3) Check if user changed password after the token was issued
+      if (userExist.changedPasswordAfter(decoded.iat)) return next();
+
+      // THERE IS A LOGGED IN USER
+      res.locals.user = userExist;
+    }
+  } catch (error) {
+    return next();
+  }
+  next();
+};
 
 exports.restrictTo =
   (...roles) =>
@@ -150,6 +178,14 @@ exports.forgotPassword = catchAsync(async (req, res, next) => {
     message: 'Token sent to email',
   });
 });
+
+exports.logout = (req, res) => {
+  res.cookie('jwt', 'logged out', {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+  });
+  res.status(200).json({ status: 'success' });
+};
 
 exports.resetPassword = catchAsync(async (req, res, next) => {
   // 1) Get user based on the token
